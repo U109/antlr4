@@ -1,8 +1,7 @@
 package com.zzz.antlr.arrayInit.extend;
 
-import com.zzz.antlr.arrayInit.ArrayInitBaseListener;
-import com.zzz.antlr.arrayInit.ArrayInitBaseVisitor;
-import com.zzz.antlr.arrayInit.ArrayInitParser;
+import com.zzz.antlr.arrayInit.gen.ArrayInitBaseListener;
+import com.zzz.antlr.arrayInit.gen.ArrayInitParser;
 
 /**
  * @author: Zzz
@@ -12,38 +11,29 @@ import com.zzz.antlr.arrayInit.ArrayInitParser;
 public class ShortToUnicodeString extends ArrayInitBaseListener {
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     *
-     * @param ctx
+     * 将 { 翻译为 ”
      */
     @Override
     public void enterInit(ArrayInitParser.InitContext ctx) {
-        super.enterInit(ctx);
+        System.out.print("\"");
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     *
-     * @param ctx
+     * 将 } 翻译为 “
      */
     @Override
     public void exitInit(ArrayInitParser.InitContext ctx) {
-        super.exitInit(ctx);
+        System.out.print("\"");
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     *
-     * @param ctx
+     * 将每个整数翻译为四位的十六进制形式
      */
     @Override
     public void enterValue(ArrayInitParser.ValueContext ctx) {
-        super.enterValue(ctx);
+        //假定不存在嵌套结构
+        int value = Integer.parseInt(ctx.INT().getText());
+        //%04x 是一个格式化字符串，表示将整数格式化为4位十六进制数，不足4位的用0填充。
+        System.out.printf("\\u%04x",value);
     }
 }
