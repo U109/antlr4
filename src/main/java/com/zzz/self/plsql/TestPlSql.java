@@ -19,8 +19,8 @@ public class TestPlSql {
         PlSqlParser parser = new PlSqlParser(tokens);
         ParseTree tree = parser.selectStatement();
         System.out.println(tree.toStringTree(parser));
-//        ConversionSelect conversionSelect = new ConversionSelect();
-        ConversionSelect2 conversionSelect = new ConversionSelect2();
+        ConversionSelect conversionSelect = new ConversionSelect();
+//        ConversionSelect2 conversionSelect = new ConversionSelect2();
         String visit = conversionSelect.visit(tree);
 
         System.out.println("visit : " + visit);

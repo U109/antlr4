@@ -3,6 +3,7 @@ package com.zzz.self.plsql;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,6 +17,10 @@ public class ConversionSelect extends PlSqlBaseVisitor<String> {
     @Override
     public String visitSelectStatement(PlSqlParser.SelectStatementContext ctx) {
         super.visitSelectStatement(ctx);
+
+        PlSqlParser.FromClauseContext fromClauseContext = ctx.fromClause();
+        String visit = visit(fromClauseContext);
+        System.out.println("from ---------- " + visit);
         String text = ctx.getText();
         System.out.println("SelectStatement text : " + text);
         List<ParseTree> children = ctx.children;
@@ -66,13 +71,27 @@ public class ConversionSelect extends PlSqlBaseVisitor<String> {
     @Override
     public String visitFromClause(PlSqlParser.FromClauseContext ctx) {
         super.visitFromClause(ctx);
+        List<String> from = new ArrayList<>();
         String text = ctx.getText();
+
         System.out.println("FromClause text : " + text);
         List<ParseTree> children = ctx.children;
         for (ParseTree child : children) {
+
             System.out.println("FromClause child : " + child.getText());
+            if ("FROM".equals(child.getText())) {
+                from.add("FROMTO");
+            }else{
+                from.add(child.getText());
+            }
+
         }
-        return "FromClause";
+        StringBuilder fromText = new StringBuilder();
+        for (String s : from) {
+            fromText.append(s).append(" ");
+        }
+        System.out.println(fromText.toString());
+        return fromText.toString();
     }
 
     @Override
