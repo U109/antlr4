@@ -66,6 +66,7 @@ public class ConversionSelect2 extends PlSqlBaseVisitor<String> {
     @Override
     public String visitTableName(PlSqlParser.TableNameContext ctx) {
         super.visitTableName(ctx);
+
         System.out.println("visitTableName");
         return "TableName";
     }
@@ -73,6 +74,8 @@ public class ConversionSelect2 extends PlSqlBaseVisitor<String> {
     @Override
     public String visitCondition(PlSqlParser.ConditionContext ctx) {
         super.visitCondition(ctx);
+        String visit = visit(ctx.expression());
+        System.out.println("visit : " + visit);
         System.out.println("visitCondition");
         return "Condition";
     }

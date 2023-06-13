@@ -70,6 +70,8 @@ public class ConversionSelect extends PlSqlBaseVisitor<String> {
 
     @Override
     public String visitFromClause(PlSqlParser.FromClauseContext ctx) {
+        // 读取from中的内容
+
         super.visitFromClause(ctx);
         List<String> from = new ArrayList<>();
         String text = ctx.getText();
