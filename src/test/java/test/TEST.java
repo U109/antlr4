@@ -1,8 +1,8 @@
 package test;
 
-import com.gbase.gen.PLSQLLexer;
-import com.gbase.gen.PLSQLParser;
-import com.gbase.extend.TransProcTo8s;
+import com.tianjing.gen.PLSQLLexer;
+import com.tianjing.gen.PLSQLParser;
+import com.tianjing.extend.TransProcTo8s;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;

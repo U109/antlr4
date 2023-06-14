@@ -1,7 +1,7 @@
-package com.gbase.extend;
+package com.tianjing.extend;
 
-import com.gbase.gen.PLSQLBaseVisitor;
-import com.gbase.gen.PLSQLParser;
+import com.tianjing.gen.PLSQLBaseVisitor;
+import com.tianjing.gen.PLSQLParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.TokenStreamRewriter;

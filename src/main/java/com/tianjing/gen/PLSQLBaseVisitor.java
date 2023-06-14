@@ -1,5 +1,5 @@
 // Generated from F:/antlr/src/main/java/com/zzz/gbase\PLSQL.g4 by ANTLR 4.12.0
-package com.gbase.gen;
+package com.tianjing.gen;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
