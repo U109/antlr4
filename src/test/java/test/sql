@@ -1,0 +1,45 @@
+-----------------------------------------------
+CREATE OR REPLACE PROCEDURE my_procedure (
+  p_input  IN  VARCHAR2,
+  p_output OUT VARCHAR2
+)
+IS
+  -- 变量定义
+  v_number NUMBER;
+  v_string VARCHAR2(100);
+  v_date   DATE;
+
+  -- 异常处理
+  ex_custom EXCEPTION;
+  ex_other  EXCEPTION;
+BEGIN
+  -- 条件语句
+  IF p_input IS NULL THEN
+    RAISE ex_custom;
+  END IF;
+
+  -- 循环语句
+  FOR i IN 1..10 LOOP
+    v_number := i;
+  END LOOP;
+
+  -- 异常处理
+  BEGIN
+    SELECT SYSDATE INTO v_date FROM DUAL WHERE 1 = 2;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      RAISE ex_other;
+  END;
+
+  -- 输出结果
+  p_output := 'Success';
+EXCEPTION
+  WHEN ex_custom THEN
+    p_output := 'Input is null';
+  WHEN ex_other THEN
+    p_output := 'No data found';
+  WHEN OTHERS THEN
+    p_output := 'Error';
+END;
+-----------------------------------------------
+

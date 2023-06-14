@@ -2,33 +2,46 @@ package com.gbase.extend;
 
 import com.gbase.gen.PLSQLBaseVisitor;
 import com.gbase.gen.PLSQLParser;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.TokenStreamRewriter;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author: Zzz
  * @date: 2023/6/13 16:54
  * @description:
  */
-public class translator_to_8s extends PLSQLBaseVisitor<String> {
-
+public class TransProcTo8s extends PLSQLBaseVisitor<String>{
 
     private boolean or_replace = false;
-    private String proc_name;
-    private List<String> proc_params = new ArrayList<>();
-    private List<String> declar_sections_without_define = new ArrayList<>();
-    private String body;
-    private List<String> listDefine = new ArrayList<>();
-    private TokenStreamRewriter tokenStreamRewriter;
+    private String proc_name = "";
+    private final List<String> proc_params = new ArrayList<>();
+    private final List<String> declar_sections_without_define = new ArrayList<>();
+    private final List<String> listDefine = new ArrayList<>();
 
-    public translator_to_8s(CommonTokenStream tokens) {
+    private String body = "";
+    private TokenStreamRewriter tokenStreamRewriter = null;
+
+    private final Map<String, Map<String, Object>> typeDefine = new HashMap<>(); // 定义类型
+    private final Set<String> collectionVar = new HashSet<>(); // 定义集合
+
+
+    public TransProcTo8s(TokenStream tokens) {
         this.tokenStreamRewriter = new TokenStreamRewriter(tokens);
     }
+
+    private String getSourceStrFromTokens(ParserRuleContext ctx) {
+        int startIndex = ctx.start.getTokenIndex();
+        int stopIndex = ctx.stop.getTokenIndex();
+        //"default" 表示使用默认的文本重写规则，即不进行任何文本重写。
+        return tokenStreamRewriter.getText("default",new Interval(startIndex,stopIndex));
+    }
+
 
     public String buildSPL() {
         String procParamsStr = "(" + String.join(", ", this.proc_params) + ")";
@@ -50,11 +63,13 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
         if (ctx.K_REPLACE() != null){
             this.or_replace = true;
         }
+        //获取存储过程名称
         this.proc_name = visit(ctx.procedure_name());
+
         for (PLSQLParser.Parameter_declarationContext param : ctx.parameter_declaration()) {
-            String visit = visit(param);
-            this.proc_params.add(visit);
+            this.proc_params.add(visit(param));
         }
+
         if (ctx.declare_section() != null) {
             this.declar_sections_without_define.add(visit(ctx.declare_section()));
         }
@@ -68,18 +83,26 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
         return super.visitSchema(ctx);
     }
 
+    /**
+     * 访问存储过程名称
+     * @param ctx Procedure_nameContext
+     * @return 存储过程名称
+     */
     @Override
     public String visitProcedure_name(PLSQLParser.Procedure_nameContext ctx) {
-        RuleContext parent = ctx.parent;
-        System.out.println(parent + " " + parent.getClass());
         return ctx.getText();
     }
 
+    /**
+     * 访问入参声明 (gbase8s中没有 in/out)
+     * @param ctx Parameter_declarationContext
+     * @return 入参声明
+     */
     @Override
     public String visitParameter_declaration(PLSQLParser.Parameter_declarationContext ctx) {
         String param_name = ctx.parameter_name().getText();
-        String param_type = this.visit(ctx.datatype());
-        return param_name + " VARCHAR" ;
+        String param_type = visit(ctx.datatype());
+        return param_name + " " + param_type;
     }
 
     @Override
@@ -94,22 +117,36 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
 
     @Override
     public String visitDeclare_section(PLSQLParser.Declare_sectionContext ctx) {
-        return super.visitDeclare_section(ctx);
+        return visit(ctx.item_list());
     }
 
     @Override
     public String visitItem_list(PLSQLParser.Item_listContext ctx) {
+
         List<String> list_other = new ArrayList<>();
         for (ParseTree child : ctx.children) {
+            String visit = visit(child);
+
             list_other.add(child.getText());
 
         }
-        return list_other.toString();
+        List<PLSQLParser.Item_declarationContext> item_declarationContexts = ctx.item_declaration();
+
+        return null;
     }
 
+    /**
+     * 参数声明
+     * @param ctx Item_declarationContext
+     * @return  参数声明
+     */
     @Override
     public String visitItem_declaration(PLSQLParser.Item_declarationContext ctx) {
-        return super.visitItem_declaration(ctx);
+        if (ctx.variable_declaration() != null){
+            return visit(ctx.variable_declaration());
+        }else{
+            return "";
+        }
     }
 
     @Override
@@ -159,6 +196,7 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
 
     @Override
     public String visitRecord_type_definition(PLSQLParser.Record_type_definitionContext ctx) {
+        System.out.println("---");
         return super.visitRecord_type_definition(ctx);
     }
 
@@ -562,8 +600,42 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
         return super.visitProcedure_call(ctx);
     }
 
+    /**
+     * 变量声明
+     * @param ctx Variable_declarationContext
+     * @return 变量声明
+     */
     @Override
     public String visitVariable_declaration(PLSQLParser.Variable_declarationContext ctx) {
+        //将变量声明处理成define和let两个字符串，如果没有赋初始值，let字符串为空字符串“”
+        //获取变量名。
+        String var_name = ctx.variable().getText();
+        //获取变量的数据类型，并使用 self.visit() 方法递归处理数据类型节点。
+        String var_dateType = visit(ctx.datatype());
+
+        String varAssignStr = "";
+        String defineExtend = "";
+//
+//        if (type_define.containsKey(var_datatype)) {
+//            if (type_define.get(var_datatype).get("type").equals("record")) {
+//                String _value = String.format("ROW(%s)", String.join(", ",
+//                        type_define.get(var_datatype).get("define").stream()
+//                                .map(field -> "NULL::" + field[1])
+//                                .collect(Collectors.toList())));
+//                String var_assign_str = String.format("String.format(\"LET %s = %s;\", name, value)", var_name, _value);
+//                var_datatype = String.format("ROW(%s)", String.join(", ",
+//                        type_define.get(var_datatype).get("define").stream()
+//                                .map(field -> String.join(" ", field))
+//                                .collect(Collectors.toList())));
+//            } else if (type_define.get(var_datatype).get("type").equals("table")) {
+//                collection_var.add(var_name);
+//                String define_extend = String.format("\nDEFINE member_of_%s %s;", var_name, type_define.get(var_datatype).get("define"));
+//                var_datatype = String.format("LIST(%s NOT NULL)", type_define.get(var_datatype).get("define"));
+//            }
+//        }
+//
+//
+
         return super.visitVariable_declaration(ctx);
     }
 
@@ -572,10 +644,22 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
         return super.visitVariable(ctx);
     }
 
+    /**
+     *访问数据类型
+     * @param ctx   DatatypeContext
+     * @return 8s对应数据类型
+     */
     @Override
     public String visitDatatype(PLSQLParser.DatatypeContext ctx) {
-        return super.visitDatatype(ctx);
+        if (ctx.scalar_datatype() != null){
+            return visit(ctx.scalar_datatype());
+        }else if (ctx.type_attribute() != null){
+            return visit(ctx.type_attribute());
+        }else {
+            return getSourceStrFromTokens(ctx);
+        }
     }
+
 
     @Override
     public String visitUser_define_type(PLSQLParser.User_define_typeContext ctx) {
@@ -707,14 +791,32 @@ public class translator_to_8s extends PLSQLBaseVisitor<String> {
         return super.visitLabel(ctx);
     }
 
+    /**
+     *访问标量类型数据，NUMBER、VARCHAR2、DATE 等
+     * @param ctx Scalar_datatypeContext
+     * @return 8s对应标量数据类型
+     */
     @Override
     public String visitScalar_datatype(PLSQLParser.Scalar_datatypeContext ctx) {
-        return super.visitScalar_datatype(ctx);
+        //进行标量数据类型翻译转换
+        if (ctx.K_NUMBER() != null) {
+            if (ctx.size().size() > 0){
+                return String.format("DECIMAL(%s)", ctx.size().stream().map(ParseTree::getText).collect(Collectors.joining(", ")));
+            }else{
+                return "DECIMAL";
+            }
+        }
+        return getSourceStrFromTokens(ctx);
     }
 
+    /**
+     * 定义或声明类型的属性
+     * @param ctx Type_attributeContext
+     * @return 类型的属性
+     */
     @Override
     public String visitType_attribute(PLSQLParser.Type_attributeContext ctx) {
-        return super.visitType_attribute(ctx);
+        return "LIKE " + ctx.variable_or_dbobj().getText();
     }
 
     @Override
