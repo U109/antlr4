@@ -1,10 +1,8 @@
 package com.zzz.antlr.plsql.extend;
 
-import com.zzz.antlr.plsql.PlSqlParser;
-import com.zzz.antlr.plsql.PlSqlParserBaseListener;
+import com.zzz.plsql.PlSqlParserBaseListener;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**

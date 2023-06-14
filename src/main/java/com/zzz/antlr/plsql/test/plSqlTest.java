@@ -1,7 +1,7 @@
 package com.zzz.antlr.plsql.test;
 
-import com.zzz.antlr.plsql.PlSqlLexer;
-import com.zzz.antlr.plsql.PlSqlParser;
+import com.zzz.plsql.PlSqlLexer;
+import com.zzz.plsql.PlSqlParser;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Parser;
